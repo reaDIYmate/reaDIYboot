@@ -163,7 +163,7 @@ Like in Example 1, the compiled bootloader should still be less than 4096 bytes 
 
 reaDIYboot is still in an early stage and there is still room for many improvements.
 
-The code has only been moderately optimized. Further reducing its size would allow more functionality to fit in 4kB. And if it is not possible, a 4kB bootloader still uses only half of the NRWW section on the ATmega1280, so there would still be plenty of room anyway.
+It has been successfully tested with program sizes up to 128kB.
 
 Robustness could be increased by adding CRC computations and/or appending specific markers to the programs before writing them to the Flash memory.
 
