@@ -29,7 +29,7 @@ Below is the WiFly configuration used to test reaDIYboot.
 
 Setup the access point SSID and security phrase:
 
-    set wlan ssid <you SSID here>
+    set wlan ssid <your SSID here>
     set wlan phrase <your passphrase here>
 
 enable the link monitor threshold with the recommended value:
