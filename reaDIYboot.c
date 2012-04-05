@@ -74,6 +74,8 @@ uint8_t const HTTP_OCF = OCF3C;
 #define HEX_BUFFER_SIZE 4096
 /* Size of a program page in Flash memory (128 words) */
 #define FLASH_PAGE_SIZE 0x80U
+/* Size of the buffer used to hold the HEX file location */
+#define PATH_BUFFER_SIZE 64
 
 // STK500 protocol
 /* Get parameter value */
@@ -136,6 +138,16 @@ char* const HTTP_FIELDS =
     "Host: " PROGRAM_HOST "\r\n"
     "Connection: Keep-Alive\r\n";
 
+/* Pointer to a string representing the HEX file location */
+#ifdef USE_URL_INDIRECTION
+char* PROGRAM_PATH = 0;
+#else
+char* PROGRAM_PATH = STATIC_PROGRAM_PATH;
+#endif
+
+/* Buffer used to hold the location of the HEX file */
+char path_buffer[PATH_BUFFER_SIZE];
+
 void main(void) __attribute__((OS_main));
 
 static void bootload_from_internet(void);
@@ -146,9 +158,11 @@ static bool add_error(uint8_t* count, uint8_t max_count);
 /* Download management */
 static void download_append_leftover(void);
 static bool download_get_chunk(void);
+static bool download_get_path(void);
 static bool download_get_size(void);
 static bool download_get_status(void);
 static bool download_parse_chunk(void);
+static bool download_parse_path(void);
 static bool download_parse_size(void);
 static void download_update_status(void);
 
@@ -355,12 +369,19 @@ static void bootload_from_internet(void)
 {
     do {
         if (boot_state == ENTERING) {
+            // Reset the Wi-Fi module in case it was left in a hanging state
+            wifly_reset();
             // Switch led color to red
             *RED_LED_PORT |= (1 << RED_LED_PIN);
             *GREEN_LED_PORT &= ~(1 << GREEN_LED_PIN);
 #ifdef CHECK_STATUS_BEFORE_DOWNLOAD
             // Check if an update is available
             if (!download_get_status())
+                boot_state = JUMPING_TO_APP;
+            else
+#endif
+#ifdef USE_URL_INDIRECTION
+            if (!download_get_path())
                 boot_state = JUMPING_TO_APP;
             else
 #endif
@@ -611,6 +632,21 @@ static bool download_get_chunk(void)
     return http_send(&request_get_chunk, &download_parse_chunk);
 }
 
+/* Get the location of the HEX file */
+static bool download_get_path(void)
+{
+    if (!http_send(&request_get_status, 0))
+        return false;
+    if (!wifly_find_string(PATH_JSON_PREFIX))
+        return false;
+    if (!download_parse_path())
+        return false;
+    else {
+        PROGRAM_PATH = path_buffer;
+        return true;
+    }
+}
+
 /* Poll the HTTP server to get the size of the HEX file */
 static bool download_get_size(void)
 {
@@ -648,6 +684,29 @@ static bool download_parse_chunk(void)
         dest[i] = 0x00;
         return true;
     }
+}
+
+/* Parse the value associated to the "path" key in the JSON response */
+static bool download_parse_path(void)
+{
+    uint8_t ch;
+    uint8_t i;
+
+    i = 0;
+    do {
+        ch = wifly_get_char();
+        if (i >= PATH_BUFFER_SIZE - 1)
+            return false;
+        else if (ch == '\\')
+            continue;
+        else if (ch == '\"')
+            break;
+        else {
+            path_buffer[i++] = ch;
+        }
+    } while (true);
+    path_buffer[i] = '\0';
+    return true;
 }
 
 /* Parse the Content-Length field from the incoming HTTP header */
