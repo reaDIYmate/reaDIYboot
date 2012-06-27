@@ -23,7 +23,11 @@ All the I/O definitions are written at the beginning of the source code so you c
 
 This section explains how to configure a WiFly module to work with reaDIYboot.
 
-It is recommended to update the firmware of the WiFly module as soon as possible. To do this, use the `ftp update` command and don't forget to perform a `factory RESET` once the update is complete.
+It is recommended to update the firmware of the WiFly module as soon as possible - otherwise it might not work with some access points. To do this, use the `ftp update` command and don't forget to perform a `factory RESET` once the update is complete.
+As of May 2012, the IP address of the FTP server hosting the WiFly firmware has changed. Therefore you'll need to redirect the module to the new IP address of the FTP server using the following command:
+
+    set ftp address 208.109.14.133
+    save
 
 Below is the WiFly configuration used to test reaDIYboot.
 
