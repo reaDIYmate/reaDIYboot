@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="reaDIYboot : Wi-Fi/STK500 dual bootloader for the ATmega1280" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>reaDIYboot</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/reaDIYmate/reaDIYboot">View on GitHub</a>
+
+          <h1 id="project_title">reaDIYboot</h1>
+          <h2 id="project_tagline">Wi-Fi/STK500 dual bootloader for the ATmega1280</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/reaDIYmate/reaDIYboot/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/reaDIYmate/reaDIYboot/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p><strong>reaDIYboot</strong> is a bootloader for the ATmega1280 microcontroller from Atmel.
+It gives the ATmega1280 two ways of programming itself:</p>
+
+<ol>
+<li>Over a serial link using the STK500v1 protocol to receive new programs from avrdude</li>
+<li>Over the internet using a WiFly GSX/EZX Wi-Fi module from Roving Networks to retrieve new programs from a remote server</li>
+</ol><h2>Hardware setup</h2>
+
+<p>reaDIYboot has been tested with the WiFly GSX RN131 and the WiFly EZX RN171 modules.</p>
+
+<p>It was developped for a custom board with the following wiring:</p>
+
+<ol>
+<li>Pin <code>RESET</code> of the WiFly to pin <code>PL0</code> of the ATmega1280</li>
+<li>Pin <code>UART_RX</code> to pin <code>PD3</code> (i.e <code>USART1_TX</code>)</li>
+<li>Pin <code>UART_TX</code> to pin <code>PD2</code> (i.e <code>USART1_RX</code>)</li>
+<li>Pin <code>GPIO4</code> to pin <code>PJ5</code>
+</li>
+<li>Pin <code>GPIO5</code> to pin <code>PJ6</code>
+</li>
+<li>Pin <code>GPIO6</code> to pin <code>PJ7</code>
+</li>
+</ol><p>All the I/O definitions are written at the beginning of the source code so you can easily change them.</p>
+
+<h2>WiFly firmware setup</h2>
+
+<p>This section explains how to configure a WiFly module to work with reaDIYboot.</p>
+
+<p>It is recommended to update the firmware of the WiFly module as soon as possible - otherwise it might not work with some access points. To do this, use the <code>ftp update</code> command and don't forget to perform a <code>factory RESET</code> once the update is complete.
+As of May 2012, the IP address of the FTP server hosting the WiFly firmware has changed. Therefore you'll need to redirect the module to the new IP address of the FTP server using the following command:</p>
+
+<pre><code>set ftp address 208.109.14.133
+save
+</code></pre>
+
+<p>Below is the WiFly configuration used to test reaDIYboot.</p>
+
+<p>Setup the access point SSID and security phrase:</p>
+
+<pre><code>set wlan ssid &lt;your SSID here&gt;
+set wlan phrase &lt;your passphrase here&gt;
+</code></pre>
+
+<p>enable the link monitor threshold with the recommended value:</p>
+
+<pre><code>set wlan linkmon 5
+</code></pre>
+
+<p>disable access point autojoin:</p>
+
+<pre><code>set wlan join 0
+</code></pre>
+
+<p>disable the socket monitor strings:</p>
+
+<pre><code>set comm open 0
+set comm close 0
+set comm remote 0
+</code></pre>
+
+<p>disable echo of RX data and replace the version string with a single carriage return:</p>
+
+<pre><code>set uart mode 0x21
+set opt replace 0xd
+</code></pre>
+
+<p>enable DHCP cache mode:</p>
+
+<pre><code>set ip dhcp 3
+</code></pre>
+
+<p>close any open TCP connection when the connection to the access point is lost:</p>
+
+<pre><code>set ip flags 0x6
+</code></pre>
+
+<p>force DNS:</p>
+
+<pre><code>set ip tcp-mode 0x4
+</code></pre>
+
+<p>enable the alternate functions of the LEDs:</p>
+
+<pre><code>set sys iofunc 0x70
+</code></pre>
+
+<p>increase the baudrate (250 kbaud yields 0.0% error with a 16 MHz crystal!)</p>
+
+<pre><code>set uart raw 250000
+</code></pre>
+
+<h2>Compilation example 1 - building reaDIYboot for basic uploads</h2>
+
+<p>Suppose you have a board with an ATmega1280 and you want to upload new programs on it over the internet.</p>
+
+<h3>1. Setup the target program in the makefile</h3>
+
+<p>You need to specify a few parameters before compiling reaDIYboot.</p>
+
+<p>Let's say your program is located at the following URL: <code>http://somedomain.com/hexfiles/some_program.hex</code></p>
+
+<p>The first thing to do is to edit the makefile and set the right values for <code>PROGRAM_HOST</code> and <code>PROGRAM_PATH</code>.</p>
+
+<p>Find the following lines in the makefile:</p>
+
+<pre><code>PROGRAM_HOST = ""
+PROGRAM_PATH = ""
+</code></pre>
+
+<p>and edit them as shown below:</p>
+
+<pre><code>PROGRAM_HOST = "somedomain.com"
+PROGRAM_PATH = "/hexfiles/some_program.hex"
+</code></pre>
+
+<p>You can also set the User Agent string to whatever you want.</p>
+
+<h3>2. Compile reaDIYboot</h3>
+
+<pre><code>make clean
+make all
+</code></pre>
+
+<p>Notice that the makefile calls the <code>avr-size</code> utility to display the size of the compiled bootloader. Unless you have a <em>really</em> long URL, it should still be well under the 4kB boundary.</p>
+
+<h3>3. Burn reaDIYboot to the ATmega1280</h3>
+
+<h3>4. You're done!</h3>
+
+<p>Now you have two ways of loading a new program onto the microcontroller:</p>
+
+<ol>
+<li>Plug your board to a computer and use the Upload function of the Arduino IDE (or use avrdude directly).</li>
+<li>Compile your program, rename the corresponding HEX file to <code>some_program.hex</code> and upload it to <code>somedomain.com/hexfiles/</code>
+</li>
+</ol><p>If the bootloader doesn't detect a computer trying to upload a new program when it starts, it is going to send a request to <code>somedomain.com</code> in order to determine whether <code>/hexfiles/some_program.hex</code> exists. If the file does exist, the bootloader will download it, write it to the Flash memory and run it after a reset.</p>
+
+<h2>Compilation example 2 - building reaDIYboot for adaptative uploads</h2>
+
+<p>The previous method has a major inconvenience: the only way to prevent the microcontroller from downloading the same program every single time it resets is to remove the HEX file from the server.</p>
+
+<p>Fortunately there are two options that you can enable in the makefile to help with this.</p>
+
+<p>With the <code>CHECK_STATUS_BEFORE_DOWNLOAD</code> option enabled, the bootloader will send an HTTP request to the server before it tries to download the program, and if it doesn't receive the expected response it will skip the update.</p>
+
+<p>With the <code>CLEAR_STATUS_AFTER_DOWNLOAD</code> option enabled, the bootloader will send an HTTP request to the server after an update has been successfully completed.</p>
+
+<p>Since you can also specify which requests are sent, you can use these options to make specific calls on an API, which makes update management much more flexible.</p>
+
+<h3>1. Setup the API calls in the makefile</h3>
+
+<p>Let's say you have two scripts:</p>
+
+<pre><code>somedomain.com/api/check_status.php
+somedomain.com/api/clear_status.php
+</code></pre>
+
+<p>which are written so that <code>check_status.php</code> returns <code>{"status":1}</code> until <code>clear_status.php</code> has been called, and <code>{"status":0}</code> afterwards.</p>
+
+<p>In the makefile, uncomment the following two lines, which are commented by default:</p>
+
+<pre><code>CFLAGS += -DCHECK_STATUS_BEFORE_DOWNLOAD
+CFLAGS += -DCLEAR_STATUS_AFTER_DOWNLOAD
+</code></pre>
+
+<p>Find the following lines in the makefile:</p>
+
+<pre><code>CHECK_STATUS_REQUEST = ""
+CLEAR_STATUS_REQUEST = ""
+CHECK_STATUS_EXPECTED_RESPONSE = ""
+</code></pre>
+
+<p>and edit them as shown below:</p>
+
+<pre><code>CHECK_STATUS_REQUEST = "/api/check_status.php"
+CLEAR_STATUS_REQUEST = "/api/clear_status.php"
+CHECK_STATUS_EXPECTED_RESPONSE = "{\"status\":1}"
+</code></pre>
+
+<h3>2. Compile reaDIYboot</h3>
+
+<p>Like in Example 1, the compiled bootloader should still be less than 4096 bytes (using the strings from my example, I get 3798 bytes).</p>
+
+<h3>3. Burn the bootloader</h3>
+
+<h3>4. You're done!</h3>
+
+<h2>A few more ideas</h2>
+
+<p>reaDIYboot is still in an early stage and there is still room for many improvements.</p>
+
+<p>It has been successfully tested with program sizes up to 128kB.</p>
+
+<p>Robustness could be increased by adding CRC computations and/or appending specific markers to the programs before writing them to the Flash memory.</p>
+
+<hr><p><strong>reaDIYboot</strong> is being developped as part of the <a href="http://readiymate.com">reaDIYmate</a> platform.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">reaDIYboot maintained by <a href="https://github.com/reaDIYmate">reaDIYmate</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
