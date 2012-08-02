@@ -124,8 +124,8 @@ uint8_t const SIG3 = 0x03;
 /* STK programmer */
 uint8_t const MAX_STK_ERROR_COUNT = 5;
 /* WiFly module */
-uint8_t const MAX_COMMAND_ERRORS = 3;
-uint8_t const MAX_WIFLY_CRITICAL_ERRORS = 3;
+uint8_t const MAX_COMMAND_ERRORS = 1;
+uint8_t const MAX_WIFLY_CRITICAL_ERRORS = 1;
 uint8_t const MAX_WLAN_ERRORS = 3;
 /* Web server  */
 uint8_t const MAX_DOWNLOAD_CRITICAL_ERRORS = 3;
