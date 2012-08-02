@@ -20,6 +20,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #include <util/delay.h>
 
 /* WiFly reset pin */
@@ -147,6 +148,8 @@ char* PROGRAM_PATH = STATIC_PROGRAM_PATH;
 
 /* Buffer used to hold the location of the HEX file */
 char path_buffer[PATH_BUFFER_SIZE];
+/* Buffer used to hold the id of the device */
+char device_id[DEVICE_ID_LENGTH + 1];
 
 void main(void) __attribute__((OS_main));
 
@@ -166,9 +169,12 @@ static bool download_parse_path(void);
 static bool download_parse_size(void);
 static void download_update_status(void);
 
+/* Read device ID from EEPROM */
+static void eeprom_read_id(void);
+
 /* Send HTTP requests */
-static bool http_send(void (*request)(void), bool (*action)(void));
 static bool http_await_response(void);
+static bool http_send(void (*request)(void), bool (*action)(void));
 static void request_get_chunk(void);
 static void request_get_size(void);
 static void request_get_status(void);
@@ -367,6 +373,9 @@ void main(void)
 
 static void bootload_from_internet(void)
 {
+#ifdef USE_DEVICE_ID
+    eeprom_read_id();
+#endif
     do {
         if (boot_state == ENTERING) {
             // Reset the Wi-Fi module in case it was left in a hanging state
@@ -756,6 +765,17 @@ static void download_update_status(void)
     http_send(&request_update_status, 0);
 }
 
+
+/* Read the device ID from the EEPROM in to the SRAM */
+static void eeprom_read_id(void)
+{
+    eeprom_read_block(
+        (void*)device_id,
+        (const void*)DEVICE_ID_EEPROM_ADDRESS,
+        DEVICE_ID_LENGTH
+    );
+}
+
 /* Wait for a response from the server to the last HTTP request sent */
 static bool http_await_response(void)
 {
@@ -937,6 +957,7 @@ static void request_get_size(void)
 static void request_get_status(void)
 {
     wifly_put_string(CHECK_STATUS_REQUEST);
+    wifly_put_string(device_id);
     wifly_put_string(HTTP_FIELDS);
     wifly_put_string("\r\n");
 }
@@ -945,6 +966,7 @@ static void request_get_status(void)
 static void request_update_status(void)
 {
     wifly_put_string(CLEAR_STATUS_REQUEST);
+    wifly_put_string(device_id);
     wifly_put_string(HTTP_FIELDS);
     wifly_put_string("\r\n");
 }
