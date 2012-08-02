@@ -340,14 +340,16 @@ void main(void)
     UCSR0A = 0x00;
     UCSR0B = (1 << TXEN0)|(1 << RXEN0);
     UCSR0C = (1 << UCSZ01)|(1 << UCSZ00);
-    // Enable internal pull-up resistor on pin D0 (RX)
+    // Enable internal pull-up resistor on pin E0 (RX)
     DDRE &= ~(1 << PINE0);
     PORTE |= (1 << PINE0);
 
     // Initialize UART1 (for the Wi-Fi module)
-    UBRR1L = (uint8_t)(F_CPU/(WIFLY_BAUD_RATE*16L) - 1);
-    UBRR1H = (F_CPU/(WIFLY_BAUD_RATE*16L) - 1) >> 8;
-    UCSR1A = 0x00;
+    // UBRR1L = (uint8_t)(F_CPU/(WIFLY_BAUD_RATE*16L) - 1);
+    // UBRR1H = (F_CPU/(WIFLY_BAUD_RATE*16L) - 1) >> 8;
+    UBRR1L = 0x10;
+    UBRR1H = 0x00;
+    UCSR1A = (1 << U2X1);
     UCSR1B = (1 << TXEN1)|(1 << RXEN1);
     UCSR1C = (1 << UCSZ11)|(1 << UCSZ10);
 
