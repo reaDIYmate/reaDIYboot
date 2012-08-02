@@ -345,11 +345,15 @@ void main(void)
     PORTE |= (1 << PINE0);
 
     // Initialize UART1 (for the Wi-Fi module)
-    // UBRR1L = (uint8_t)(F_CPU/(WIFLY_BAUD_RATE*16L) - 1);
-    // UBRR1H = (F_CPU/(WIFLY_BAUD_RATE*16L) - 1) >> 8;
-    UBRR1L = 0x10;
-    UBRR1H = 0x00;
+#if WIFLY_BAUD_RATE >= 115200
+    UBRR1L = (uint8_t)(F_CPU/(WIFLY_BAUD_RATE*4L) - 1)/2;
+    UBRR1H = (F_CPU/(WIFLY_BAUD_RATE*4L) - 1)/2 >> 8;
     UCSR1A = (1 << U2X1);
+#else
+    UBRR1L = (uint8_t)(F_CPU/(WIFLY_BAUD_RATE*8L) - 1)/2;
+    UBRR1H = (F_CPU/(WIFLY_BAUD_RATE*8L) - 1)/2 >> 8;
+    UCSR1A = 0x00;
+#endif
     UCSR1B = (1 << TXEN1)|(1 << RXEN1);
     UCSR1C = (1 << UCSZ11)|(1 << UCSZ10);
 
