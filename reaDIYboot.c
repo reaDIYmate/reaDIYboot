@@ -71,6 +71,11 @@ uint8_t const WLAN_OCF = OCF3B;
 volatile uint16_t* const HTTP_OCR = &OCR3C;
 uint8_t const HTTP_OCF = OCF3C;
 
+/* Location of the EEPROM flag */
+uint16_t* const EEPROM_FLAG_ADDRESS = (uint16_t*)(0xFFF - 1);
+/* Value of the EEPROM flag */
+uint16_t const EEPROM_FLAG_VALUE = 0x232e;
+
 /* Size of a program page in a HEX file */
 #define HEX_BUFFER_SIZE 4096
 /* Size of a program page in Flash memory (128 words) */
@@ -370,6 +375,14 @@ void main(void)
 
     // Try to bootload using the STK protocol on UART0.
     bootload_from_stk();
+
+    // If the EEPROM flag doesn't have the magic value, don't try to bootload
+    // from the internet.
+    if (eeprom_read_word(EEPROM_FLAG_ADDRESS) != EEPROM_FLAG_VALUE) {
+        WDTCSR = (1 << WDE);
+        while (1);
+    }
+
     // Try to bootload using the Wi-Fi module on UART1 to fetch a program from
     // the internet.
     bootload_from_internet();
